@@ -1,0 +1,193 @@
+﻿Version=6.5
+NumberOfModules=3
+Module1=Starter
+Module2=Charts
+Module3=AsyncStreamsText
+Build1=Default,b4a.example
+ManifestCode='This code will be applied to the manifest file during compilation.~\n~'You do not need to modify it in most cases.~\n~'See this link for for more information: http://www.b4x.com/forum/showthread.php?p=78136~\n~AddManifestText(~\n~<uses-sdk android:minSdkVersion="5" android:targetSdkVersion="19"/>~\n~<supports-screens android:largeScreens="true" ~\n~    android:normalScreens="true" ~\n~    android:smallScreens="true" ~\n~    android:anyDensity="true"/>)~\n~SetApplicationAttribute(android:icon, "@drawable/icon")~\n~SetApplicationAttribute(android:label, "$LABEL$")~\n~'End of default text.~\n~
+IconFile=
+NumberOfFiles=3
+File1=a.bal
+File2=AsyncStreamsText.bas
+File3=Charts.bas
+NumberOfLibraries=5
+Library1=core
+Library2=phone
+Library3=serial
+Library4=randomaccessfile
+Library5=gps
+@EndOfDesignText@
+#Region  Project Attributes 
+	#ApplicationLabel: عصاي هوشمند
+	#VersionCode: 1
+	#VersionName: 
+	'SupportedOrientations possible values: unspecified, landscape or portrait.
+	#SupportedOrientations: unspecified
+	#CanInstallToExternalStorage: False
+#End Region
+
+#Region  Activity Attributes 
+	#FullScreen: False
+	#IncludeTitle: True
+#End Region
+
+Sub Process_Globals
+	'These global variables will be declared once when the application starts.
+	'These variables can be accessed from all modules.
+	Dim serial1 As Serial
+	Dim AStreams As AsyncStreams
+	Dim TextWriter1 As TextWriter
+	Dim TextReader1 As TextReader
+	Dim Timer1 As Timer
+	'Dim noti As Notification
+	Dim SMS As PhoneSms
+	Dim latmsg As Float
+	Dim lonmsg As Float
+	Dim PhoneNumber As String 
+	Dim GPS1 As GPS
+	'Dim Location1 As Location
+End Sub
+
+Sub Globals
+	'These global variables will be redeclared each time the activity is created.
+	'These variables can only be accessed from this module.
+	Dim connected As Boolean
+	Private Label1 As Label
+	Private Button1 As Button
+	Private Label2 As Label
+	Private Button2 As Button
+	Private EditText1 As EditText
+	Private Button4 As Button
+	Private Button5 As Button
+End Sub
+
+Sub Activity_Create(FirstTime As Boolean)
+	'Do not forget to load the layout file created with the visual designer. For example:
+	Activity.LoadLayout("a")
+	Activity.AddMenuItem("اتصال", "mnuConnect")
+	Activity.AddMenuItem("درباره ما", "about")
+	
+	Activity.AddMenuItem("قطع", "mnuDisconnect")
+	If FirstTime Then
+		serial1.Initialize("Serial1")
+	'Timer1.Initialize("Timer1", 1000)
+'Timer1.Enabled = True
+	'noti.Initialize
+	   GPS1.Initialize("GPS1")
+'Location1.Initialize
+		Button5.Visible=False
+		Button4.Visible=False
+		End If
+		
+End Sub
+
+Sub Activity_Resume
+	If GPS1.GPSEnabled = False Then
+		ToastMessageShow("Please enable the GPS device.", True)
+		StartActivity(GPS1.LocationSettingsIntent) 'Will open the relevant settings screen.
+	Else
+		GPS1.Start(0, 0) 'Listen to GPS with no filters.
+	End If
+End Sub
+
+
+
+Sub Activity_Pause (UserClosed As Boolean)
+
+End Sub
+Sub about_click
+	Msgbox("manager:Dariush Yosefi electrical designer:Alireza Darushi Web designer:Mr.Mehrabian","شركت سلامت بنيان حال خوب")
+	ToastMessageShow("از اينكه ما را انتخاب كرديد متشكريم",True)
+End Sub
+Sub mnuConnect_Click
+	Dim PairedDevices As Map
+	PairedDevices = serial1.GetPairedDevices
+	Dim l As List
+	l.Initialize
+	For i = 0 To PairedDevices.Size - 1
+		l.Add(PairedDevices.GetKeyAt(i)) 'add the friendly name to the list
+	Next
+	Dim res As Int
+	res = InputList(l, "انتخاب دستگاه", -1) 'show list with paired devices
+	If res <> DialogResponse.CANCEL Then
+		serial1.Connect(PairedDevices.Get(l.Get(res))) 'convert the name to mac address
+	End If
+End Sub
+
+Sub mnuDisconnect_click
+	serial1.Disconnect
+End Sub
+
+
+
+Sub Serial1_Connected (Success As Boolean)
+	If Success Then
+		ToastMessageShow("متصل شد", False)
+		TextReader1.Initialize(serial1.InputStream)
+		TextWriter1.Initialize(serial1.OutputStream)
+		AStreams.Initialize(serial1.InputStream,serial1.OutputStream,"Astreams")
+		connected = True
+		'Timer1.Enabled = True
+	Else
+		connected = False
+		Msgbox(LastException.message, "خطا در اتصال")
+	End If
+End Sub
+Sub GPS_LocationChanged (Location1 As Location)
+	latmsg = Location1.Latitude
+	lonmsg = Location1.Longitude
+	'ToastMessageShow(latmsg)
+	Button1.Text= latmsg
+	Button2.Text= lonmsg
+End Sub
+Sub button3_click
+'Sub Timer1_Tick
+	If connected Then
+		'in=TextReader1.Read
+		'If TextReader1.Ready Then 'check if there is any data waiting to be read
+			If TextReader1.ReadLine="A" Then
+				Button4.Visible=True
+				Button4.Text="عصا افتاد"
+				Button5.Visible=False
+				'noti.Light = True
+				'.Vibrate = True
+				'noti.OnGoingEvent = True
+				'noti.Sound = True
+				'noti.Notify(1)
+				SMS.Send("09139978404","Latitude="& latmsg &"-"&"Longitude="& lonmsg &DateTime.Time(DateTime.Now))
+			ToastMessageShow("sms send",True)
+         
+			End If
+		   ' If TextReader1.ReadLine="B" Then
+		   ' 	Label1.Text="ضربان قلب"
+		    '	Label2.Visible=True
+'Label2.Text=""
+		  	'    Label2.Text=Label2.Text & TextReader1.ReadLine & CRLF
+	        End If
+		'End If
+	'End If
+End Sub
+
+
+'Main activity
+
+Sub Button1_Click
+	If connected Then
+		TextWriter1.Write("2")
+		TextWriter1.Flush
+	End If
+End Sub
+
+Sub Button2_Click
+	If connected Then
+		TextWriter1.Write("3")
+		TextWriter1.Flush
+	End If
+	
+'	noti.Light = False
+'	noti.Vibrate = False
+'	noti.OnGoingEvent = False
+'	noti.Sound = False
+	'noti.Notify(1)
+End Sub
+
